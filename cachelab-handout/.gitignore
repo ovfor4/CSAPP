@@ -1,0 +1,6 @@
+.csim_results
+.marker
+csim_results
+test-trans
+trace.*
+tracegen

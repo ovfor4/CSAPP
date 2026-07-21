@@ -22,6 +22,26 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    int i, j, tmp, i2, j2;
+    const int blockSize = 8;
+
+    // given N, M are multiples of blockSize
+    // just to test
+    for (i = 0; i < N/blockSize; i++)
+    {
+        for (j = 0; j < M/blockSize; j++)
+        {
+            // now i, j are indecies of smaller groups
+            for (i2 = 0; i2 < blockSize; i2++)
+            {
+                for (j2 = 0; j2 < blockSize; j2++)
+                {
+                    tmp = A[i*blockSize + i2][j*blockSize + j2];
+                    B[j*blockSize + j2][i*blockSize + i2] = tmp;
+                }
+            }
+        }
+    }
 }
 
 /* 
