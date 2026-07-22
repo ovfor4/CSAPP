@@ -23,7 +23,7 @@ char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
     int i, j, i2;
-    int t0, t1, t2, t3, currentGroupI, currentGroupJ, tmpI = 7, tmpJ = 7;
+    int t0, t1, t2, t3, currentGroupI, currentGroupJ;
     const int blockSize = 4, larger = 2;
 
     for (i = 0; i < N/(blockSize*larger); i++)
@@ -87,17 +87,17 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
             }
 
-            // A01 -> temp
+            // A01 -> temp B01
             currentGroupI = 0; currentGroupJ = 4;
             for (i2 = 0; i2 < blockSize; i2++) {
                 t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
                 t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
                 t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
                 t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-                B[tmpJ*larger*blockSize + 0 + 0][tmpI*larger*blockSize + 0 + i2] = t0;
-                B[tmpJ*larger*blockSize + 0 + 1][tmpI*larger*blockSize + 0 + i2] = t1;
-                B[tmpJ*larger*blockSize + 0 + 2][tmpI*larger*blockSize + 0 + i2] = t2;
-                B[tmpJ*larger*blockSize + 0 + 3][tmpI*larger*blockSize + 0 + i2] = t3;
+                B[j*larger*blockSize + currentGroupI + 0][i*larger*blockSize + currentGroupJ + i2] = t0;
+                B[j*larger*blockSize + currentGroupI + 1][i*larger*blockSize + currentGroupJ + i2] = t1;
+                B[j*larger*blockSize + currentGroupI + 2][i*larger*blockSize + currentGroupJ + i2] = t2;
+                B[j*larger*blockSize + currentGroupI + 3][i*larger*blockSize + currentGroupJ + i2] = t3;
             }
 
             // A10 -> B01
@@ -113,13 +113,13 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
             }
 
-            // temp -> B10
+            // temp B01 -> B10
             currentGroupI = 0; currentGroupJ = 4;
             for (i2 = 0; i2 < blockSize; i2++) {
-                t0 = B[tmpJ*larger*blockSize + 0 + 0][tmpI*larger*blockSize + 0 + i2];
-                t1 = B[tmpJ*larger*blockSize + 0 + 1][tmpI*larger*blockSize + 0 + i2];
-                t2 = B[tmpJ*larger*blockSize + 0 + 2][tmpI*larger*blockSize + 0 + i2];
-                t3 = B[tmpJ*larger*blockSize + 0 + 3][tmpI*larger*blockSize + 0 + i2];
+                t0 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
+                t1 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
+                t2 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
+                t3 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
                 B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
                 B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
                 B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
