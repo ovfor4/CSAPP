@@ -50,6 +50,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             //     }
             // }
 
+            // idk but I think it's magic somehow
+            // remove to increase miss by kinda 20
             if (i == 7 && j == 7)
             {
                 for (currentGroupI = 0; currentGroupI < larger * blockSize; currentGroupI += blockSize)
@@ -173,7 +175,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                  [i * larger * blockSize + currentGroupJ + 3] = t3;
             }
 
-            // A11 -> A11
+            // A11 -> B11
             currentGroupI = 4;
             currentGroupJ = 4;
             for (i2 = 0; i2 < blockSize; i2++)
