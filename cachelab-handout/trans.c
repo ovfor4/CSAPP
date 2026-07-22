@@ -22,30 +22,32 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-    int i, j, tmp, i2;
-    int t0, t1, t2, t3;
-    const int blockSize = 4;
+    int i, j, i2;
+    int t0, t1, t2, t3, currentGroupI, currentGroupJ;
+    const int blockSize = 4, larger = 2;
 
-    for (i = 0; i < N/blockSize; i++)
+    for (i = 0; i < N/(blockSize*larger); i++)
     {
-        for (j = 0; j < M/blockSize; j++)
+        for (j = 0; j < M/(blockSize*larger); j++)
         {
-            for (i2 = 0; i2 < blockSize; i2++)
+            for (currentGroupI = 0; currentGroupI < larger*blockSize; currentGroupI+=blockSize)
             {
-                // for (j2 = 0; j2 < blockSize; j2++)
-                // {
-                //     tmp = A[i*blockSize + i2][j*blockSize + j2];
-                //     B[j*blockSize + j2][i*blockSize + i2] = tmp;
-                // }
-                t0 = tmp = A[i*blockSize + i2][j*blockSize + 0];
-                t1 = tmp = A[i*blockSize + i2][j*blockSize + 1];
-                t2 = tmp = A[i*blockSize + i2][j*blockSize + 2];
-                t3 = tmp = A[i*blockSize + i2][j*blockSize + 3];
+                for (currentGroupJ = 0; currentGroupJ < larger*blockSize; currentGroupJ+=blockSize)
+                {
+                    // move 4x4
+                    for (i2 = 0; i2 < blockSize; i2++)
+                    {
+                        t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
+                        t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
+                        t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
+                        t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
 
-                B[j*blockSize + 0][i*blockSize + i2] = t0;
-                B[j*blockSize + 1][i*blockSize + i2] = t1;
-                B[j*blockSize + 2][i*blockSize + i2] = t2;
-                B[j*blockSize + 3][i*blockSize + i2] = t3;
+                        B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
+                        B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
+                        B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
+                        B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
+                    }
+                }
             }
         }
     }
