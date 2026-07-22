@@ -4,3 +4,4 @@ csim_results
 test-trans
 trace.*
 tracegen
+csim

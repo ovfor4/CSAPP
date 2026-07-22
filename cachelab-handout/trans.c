@@ -22,41 +22,30 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-
-    // FILE *fp = fopen("debug.log", "w");
-    // if (fp == NULL) {
-    //     perror("lol");
-    //     return;
-    // }
-    // fprintf(fp, "address of A and B: %p %p\n", A, B);
-    // fclose(fp);
-
-
-    int i, j, tmp, i2, j2;
+    int i, j, tmp, i2;
+    int t0, t1, t2, t3;
     const int blockSize = 4;
 
-    // given N, M are multiples of blockSize
-    // just to test
     for (i = 0; i < N/blockSize; i++)
     {
         for (j = 0; j < M/blockSize; j++)
         {
             for (i2 = 0; i2 < blockSize; i2++)
             {
-                for (j2 = 0; j2 < blockSize; j2++)
-                {
-                    tmp = A[i*blockSize + i2][j*blockSize + j2];
-                    B[j*blockSize + i2][i*blockSize + j2] = tmp;
-                }
-            }
-            for (i2 = 0; i2 < blockSize; i2++)
-            {
-                for (j2 = i2+1; j2 < blockSize; j2++)
-                {
-                    tmp = B[j*blockSize + i2][i*blockSize + j2];
-                    B[j*blockSize + i2][i*blockSize + j2] = B[j*blockSize + j2][i*blockSize + i2];
-                    B[j*blockSize + j2][i*blockSize + i2] = tmp;
-                }
+                // for (j2 = 0; j2 < blockSize; j2++)
+                // {
+                //     tmp = A[i*blockSize + i2][j*blockSize + j2];
+                //     B[j*blockSize + j2][i*blockSize + i2] = tmp;
+                // }
+                t0 = tmp = A[i*blockSize + i2][j*blockSize + 0];
+                t1 = tmp = A[i*blockSize + i2][j*blockSize + 1];
+                t2 = tmp = A[i*blockSize + i2][j*blockSize + 2];
+                t3 = tmp = A[i*blockSize + i2][j*blockSize + 3];
+
+                B[j*blockSize + 0][i*blockSize + i2] = t0;
+                B[j*blockSize + 1][i*blockSize + i2] = t1;
+                B[j*blockSize + 2][i*blockSize + i2] = t2;
+                B[j*blockSize + 3][i*blockSize + i2] = t3;
             }
         }
     }
