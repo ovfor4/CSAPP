@@ -22,172 +22,226 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-    int i, j, i2;
+    int i, j, i2, j2, tmp;
     int t0, t1, t2, t3, currentGroupI, currentGroupJ;
-    const int blockSize = 4, larger = 2;
-
-    for (i = 0; i < N / (blockSize * larger); i++)
+    
+    const int blockSize = 8;
+    for (i = 0; i < N; i += blockSize)
     {
-        for (j = 0; j < M / (blockSize * larger); j++)
+        for (j = 0; j < M; j += blockSize)
         {
-            // for (currentGroupI = 0; currentGroupI < larger*blockSize; currentGroupI+=blockSize)
-            // {
-            //     for (currentGroupJ = 0; currentGroupJ < larger*blockSize; currentGroupJ+=blockSize)
-            //     {
-            //         // move 4x4
-            //         for (i2 = 0; i2 < blockSize; i2++)
-            //         {
-            //             t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-            //             t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-            //             t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-            //             t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-
-            //             B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-            //             B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-            //             B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-            //             B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-            //         }
-            //     }
-            // }
-
-            // idk but I think it's magic somehow
-            // remove to increase miss by kinda 20
-            if (i == 7 && j == 7)
+            for (i2 = 0; i2 < blockSize && (i+i2) < N; i2++)
             {
-                for (currentGroupI = 0; currentGroupI < larger * blockSize; currentGroupI += blockSize)
+                for (j2 = 0; j2 < blockSize && (j+j2) < M; j2++)
                 {
-                    for (currentGroupJ = 0; currentGroupJ < larger * blockSize; currentGroupJ += blockSize)
-                    {
-                        // move 4x4
-                        for (i2 = 0; i2 < blockSize; i2++)
-                        {
-                            t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                            t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                            t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                            t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+                    tmp = A[i+i2][j+j2];
+                    B[j+j2][i+i2] = tmp;
+                }
+            }
+        }
+    }
 
-                            B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                            B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                            B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                            B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+
+
+    // FILE *fpA = fopen("matrices-a.csv", "w"), *fpB = fopen("matrices-b.csv", "w");
+    // if (fpA == NULL || fpB == NULL) {
+    //     perror("lol");
+    //     return;
+    // }
+    // for (i = 0; i < N; i++)
+    // {
+    //     for (j = 0; j < M; j++)
+    //     {    
+    //         fprintf(fpA, "%d,", A[i][j]);
+    //     }
+    //     fprintf(fpA, "\n");
+    // }
+    // for (i = 0; i < M; i++)
+    // {
+    //     for (j = 0; j < N; j++)
+    //     {    
+    //         fprintf(fpB, "%d,", B[i][j]);
+    //     }
+    //     fprintf(fpB, "\n");
+    // }
+    // fclose(fpA); fclose(fpB);
+
+
+
+
+
+
+
+
+
+
+
+    if (N == 64 && M == 64) 
+    {
+        const int blockSize = 4, larger = 2;
+        for (i = 0; i < N / (blockSize * larger); i++)
+        {
+            for (j = 0; j < M / (blockSize * larger); j++)
+            {
+                // for (currentGroupI = 0; currentGroupI < larger*blockSize; currentGroupI+=blockSize)
+                // {
+                //     for (currentGroupJ = 0; currentGroupJ < larger*blockSize; currentGroupJ+=blockSize)
+                //     {
+                //         // move 4x4
+                //         for (i2 = 0; i2 < blockSize; i2++)
+                //         {
+                //             t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
+                //             t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
+                //             t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
+                //             t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
+
+                //             B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
+                //             B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
+                //             B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
+                //             B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
+                //         }
+                //     }
+                // }
+
+                // idk but I think it's magic somehow
+                // remove to increase miss by kinda 20
+                if (i == 7 && j == 7)
+                {
+                    for (currentGroupI = 0; currentGroupI < larger * blockSize; currentGroupI += blockSize)
+                    {
+                        for (currentGroupJ = 0; currentGroupJ < larger * blockSize; currentGroupJ += blockSize)
+                        {
+                            // move 4x4
+                            for (i2 = 0; i2 < blockSize; i2++)
+                            {
+                                t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
+                                t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
+                                t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
+                                t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+
+                                B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
+                                B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
+                                B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
+                                B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                            }
                         }
                     }
+                    continue;
                 }
-                continue;
-            }
 
-            // A00 -> B00
-            currentGroupI = 0;
-            currentGroupJ = 0;
-            for (i2 = 0; i2 < blockSize; i2++)
-            {
-                t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
-            }
+                // A00 -> B00
+                currentGroupI = 0;
+                currentGroupJ = 0;
+                for (i2 = 0; i2 < blockSize; i2++)
+                {
+                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
+                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
+                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
+                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+                    B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
+                    B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
+                    B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
+                    B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                }
 
-            // A01 -> temp B01
-            currentGroupI = 0;
-            currentGroupJ = 4;
-            for (i2 = 0; i2 < blockSize; i2++)
-            {
-                t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                B[j * larger * blockSize + currentGroupI + 0][i * larger * blockSize + currentGroupJ + i2] = t0;
-                B[j * larger * blockSize + currentGroupI + 1][i * larger * blockSize + currentGroupJ + i2] = t1;
-                B[j * larger * blockSize + currentGroupI + 2][i * larger * blockSize + currentGroupJ + i2] = t2;
-                B[j * larger * blockSize + currentGroupI + 3][i * larger * blockSize + currentGroupJ + i2] = t3;
-            }
+                // A01 -> temp B01
+                currentGroupI = 0;
+                currentGroupJ = 4;
+                for (i2 = 0; i2 < blockSize; i2++)
+                {
+                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
+                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
+                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
+                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+                    B[j * larger * blockSize + currentGroupI + 0][i * larger * blockSize + currentGroupJ + i2] = t0;
+                    B[j * larger * blockSize + currentGroupI + 1][i * larger * blockSize + currentGroupJ + i2] = t1;
+                    B[j * larger * blockSize + currentGroupI + 2][i * larger * blockSize + currentGroupJ + i2] = t2;
+                    B[j * larger * blockSize + currentGroupI + 3][i * larger * blockSize + currentGroupJ + i2] = t3;
+                }
 
-            // // A10 -> B01
-            // currentGroupI = 4; currentGroupJ = 0;
-            // for (i2 = 0; i2 < blockSize; i2++) {
-            //     t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-            //     t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-            //     t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-            //     t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-            //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-            //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-            //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-            //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-            // }
+                // // A10 -> B01
+                // currentGroupI = 4; currentGroupJ = 0;
+                // for (i2 = 0; i2 < blockSize; i2++) {
+                //     t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
+                //     t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
+                //     t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
+                //     t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
+                //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
+                //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
+                //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
+                //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
+                // }
 
-            // // temp B01 -> B10
-            // currentGroupI = 0; currentGroupJ = 4;
-            // for (i2 = 0; i2 < blockSize; i2++) {
-            //     t0 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-            //     t1 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-            //     t2 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-            //     t3 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-            //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-            //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-            //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-            //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-            // }
+                // // temp B01 -> B10
+                // currentGroupI = 0; currentGroupJ = 4;
+                // for (i2 = 0; i2 < blockSize; i2++) {
+                //     t0 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
+                //     t1 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
+                //     t2 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
+                //     t3 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
+                //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
+                //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
+                //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
+                //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
+                // }
 
-            // B01 -> temp var, A10 -> B01, temp var -> B10
-            currentGroupI = 4, currentGroupJ = 0;
-            for (i2 = 0; i2 < blockSize; i2++)
-            {
-                t0 = B[j * larger * blockSize + currentGroupJ + i2]
-                      [i * larger * blockSize + currentGroupI + 0];
-                t1 = B[j * larger * blockSize + currentGroupJ + i2]
-                      [i * larger * blockSize + currentGroupI + 1];
-                t2 = B[j * larger * blockSize + currentGroupJ + i2]
-                      [i * larger * blockSize + currentGroupI + 2];
-                t3 = B[j * larger * blockSize + currentGroupJ + i2]
-                      [i * larger * blockSize + currentGroupI + 3];
+                // B01 -> temp var, A10 -> B01, temp var -> B10
+                currentGroupI = 4, currentGroupJ = 0;
+                for (i2 = 0; i2 < blockSize; i2++)
+                {
+                    t0 = B[j * larger * blockSize + currentGroupJ + i2]
+                        [i * larger * blockSize + currentGroupI + 0];
+                    t1 = B[j * larger * blockSize + currentGroupJ + i2]
+                        [i * larger * blockSize + currentGroupI + 1];
+                    t2 = B[j * larger * blockSize + currentGroupJ + i2]
+                        [i * larger * blockSize + currentGroupI + 2];
+                    t3 = B[j * larger * blockSize + currentGroupJ + i2]
+                        [i * larger * blockSize + currentGroupI + 3];
 
-                B[j * larger * blockSize + currentGroupJ + i2]
-                 [i * larger * blockSize + currentGroupI + 0] =
-                     A[i * larger * blockSize + currentGroupI + 0]
-                      [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * larger * blockSize + currentGroupJ + i2]
+                    [i * larger * blockSize + currentGroupI + 0] =
+                        A[i * larger * blockSize + currentGroupI + 0]
+                        [j * larger * blockSize + currentGroupJ + i2];
 
-                B[j * larger * blockSize + currentGroupJ + i2]
-                 [i * larger * blockSize + currentGroupI + 1] =
-                     A[i * larger * blockSize + currentGroupI + 1]
-                      [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * larger * blockSize + currentGroupJ + i2]
+                    [i * larger * blockSize + currentGroupI + 1] =
+                        A[i * larger * blockSize + currentGroupI + 1]
+                        [j * larger * blockSize + currentGroupJ + i2];
 
-                B[j * larger * blockSize + currentGroupJ + i2]
-                 [i * larger * blockSize + currentGroupI + 2] =
-                     A[i * larger * blockSize + currentGroupI + 2]
-                      [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * larger * blockSize + currentGroupJ + i2]
+                    [i * larger * blockSize + currentGroupI + 2] =
+                        A[i * larger * blockSize + currentGroupI + 2]
+                        [j * larger * blockSize + currentGroupJ + i2];
 
-                B[j * larger * blockSize + currentGroupJ + i2]
-                 [i * larger * blockSize + currentGroupI + 3] =
-                     A[i * larger * blockSize + currentGroupI + 3]
-                      [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * larger * blockSize + currentGroupJ + i2]
+                    [i * larger * blockSize + currentGroupI + 3] =
+                        A[i * larger * blockSize + currentGroupI + 3]
+                        [j * larger * blockSize + currentGroupJ + i2];
 
-                B[j * larger * blockSize + currentGroupI + i2]
-                 [i * larger * blockSize + currentGroupJ + 0] = t0;
-                B[j * larger * blockSize + currentGroupI + i2]
-                 [i * larger * blockSize + currentGroupJ + 1] = t1;
-                B[j * larger * blockSize + currentGroupI + i2]
-                 [i * larger * blockSize + currentGroupJ + 2] = t2;
-                B[j * larger * blockSize + currentGroupI + i2]
-                 [i * larger * blockSize + currentGroupJ + 3] = t3;
-            }
+                    B[j * larger * blockSize + currentGroupI + i2]
+                    [i * larger * blockSize + currentGroupJ + 0] = t0;
+                    B[j * larger * blockSize + currentGroupI + i2]
+                    [i * larger * blockSize + currentGroupJ + 1] = t1;
+                    B[j * larger * blockSize + currentGroupI + i2]
+                    [i * larger * blockSize + currentGroupJ + 2] = t2;
+                    B[j * larger * blockSize + currentGroupI + i2]
+                    [i * larger * blockSize + currentGroupJ + 3] = t3;
+                }
 
-            // A11 -> B11
-            currentGroupI = 4;
-            currentGroupJ = 4;
-            for (i2 = 0; i2 < blockSize; i2++)
-            {
-                t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                // A11 -> B11
+                currentGroupI = 4;
+                currentGroupJ = 4;
+                for (i2 = 0; i2 < blockSize; i2++)
+                {
+                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
+                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
+                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
+                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+                    B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
+                    B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
+                    B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
+                    B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                }
             }
         }
     }
