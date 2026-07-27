@@ -30,9 +30,9 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     {
         for (j = 0; j < M; j += blockSize)
         {
-            for (i2 = 0; i2 < blockSize && (i+i2) < N; i2++)
+            for (j2 = 0; j2 < blockSize && (j+j2) < M; j2++)
             {
-                for (j2 = 0; j2 < blockSize && (j+j2) < M; j2++)
+                for (i2 = 0; i2 < blockSize && (i+i2) < N; i2++)
                 {
                     tmp = A[i+i2][j+j2];
                     B[j+j2][i+i2] = tmp;
