@@ -61,6 +61,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
         {
             for (j = 0; j < M; j+=CASE_32_32_BLOCK_SIZE)
             {
+                // wtf magic?
                 if (i == j && i != 24)
                 {
                     for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
