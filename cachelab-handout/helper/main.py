@@ -6,9 +6,7 @@ THIS IS FULLY DONE BY AI
 DO NOT ASK ME WHY SOMEWHAT IS SOMEWHAT
 THIS IS USED SOLELY FOR ILLUSTRATION AND EXPLANATION RATHER THAN ACTUAL COURSE WORK
 THIS IS NOT CHEATING
-"""
 
-"""
 Cache Lab 61x67: isolate the effect of the i2/j2 loop order.
 
 This script models the cache used by the classic CS:APP Cache Lab:
