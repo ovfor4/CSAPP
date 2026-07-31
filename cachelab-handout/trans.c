@@ -19,30 +19,18 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
  *     searches for that string to identify the transpose function to
  *     be graded.
  */
+
+#define GENERAL_BLOCK_SIZE 8
+#define CASE_32_32_BLOCK_SIZE 8
+#define CASE_64_64_BLOCK_SIZE 4
+#define CASE_64_64_MAGIC_NUMBER 2
+
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
-    int i, j, i2, j2, tmp;
-    int t0, t1, t2, t3, currentGroupI, currentGroupJ;
+    int i, j, i2, j2;
+    int t0, t1, t2, t3, t4, t5, t6, t7;
     
-    const int blockSize = 8;
-    for (i = 0; i < N; i += blockSize)
-    {
-        for (j = 0; j < M; j += blockSize)
-        {
-            for (j2 = 0; j2 < blockSize && (j+j2) < M; j2++)
-            {
-                for (i2 = 0; i2 < blockSize && (i+i2) < N; i2++)
-                {
-                    tmp = A[i+i2][j+j2];
-                    B[j+j2][i+i2] = tmp;
-                }
-            }
-        }
-    }
-
-
-
     // FILE *fpA = fopen("matrices-a.csv", "w"), *fpB = fopen("matrices-b.csv", "w");
     // if (fpA == NULL || fpB == NULL) {
     //     perror("lol");
@@ -66,63 +54,83 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
     // }
     // fclose(fpA); fclose(fpB);
 
-
-
-
-
-
-
-
-
-
-
-    if (N == 64 && M == 64) 
+    if (N == 32 && M == 32)
     {
-        const int blockSize = 4, larger = 2;
-        for (i = 0; i < N / (blockSize * larger); i++)
+
+        for (i = 0; i < N; i+=CASE_32_32_BLOCK_SIZE)
         {
-            for (j = 0; j < M / (blockSize * larger); j++)
+            for (j = 0; j < M; j+=CASE_32_32_BLOCK_SIZE)
             {
-                // for (currentGroupI = 0; currentGroupI < larger*blockSize; currentGroupI+=blockSize)
-                // {
-                //     for (currentGroupJ = 0; currentGroupJ < larger*blockSize; currentGroupJ+=blockSize)
-                //     {
-                //         // move 4x4
-                //         for (i2 = 0; i2 < blockSize; i2++)
-                //         {
-                //             t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-                //             t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-                //             t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-                //             t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
+                if (i == j && i != 24)
+                {
+                    for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
+                    {
+                        for (j2 = 0; j2 < CASE_32_32_BLOCK_SIZE; j2++)
+                        {
+                            t0 = A[i + i2][j + j2];
+                            B[24 + j2][24 + i2] = t0;
+                        }
+                    }
+                    for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
+                    {
+                        for (j2 = 0; j2 < CASE_32_32_BLOCK_SIZE; j2++)
+                        {
+                            t0 = B[24 + i2][24 + j2];
+                            B[i + i2][j + j2] = t0;
+                        }
+                    }
+                    continue;
+                }
 
-                //             B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-                //             B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-                //             B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-                //             B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-                //         }
-                //     }
-                // }
 
+                for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
+                {
+                    t0 = A[i+i2][j+0];
+                    t1 = A[i+i2][j+1];
+                    t2 = A[i+i2][j+2];
+                    t3 = A[i+i2][j+3];
+                    t4 = A[i+i2][j+4];
+                    t5 = A[i+i2][j+5];
+                    t6 = A[i+i2][j+6];
+                    t7 = A[i+i2][j+7];
+                    B[j+0][i+i2] = t0;
+                    B[j+1][i+i2] = t1;
+                    B[j+2][i+i2] = t2;
+                    B[j+3][i+i2] = t3;
+                    B[j+4][i+i2] = t4;
+                    B[j+5][i+i2] = t5;
+                    B[j+6][i+i2] = t6;
+                    B[j+7][i+i2] = t7;
+                }
+            }
+        }
+    }
+    else if (N == 64 && M == 64) 
+    {
+        for (i = 0; i < N / (CASE_64_64_BLOCK_SIZE * CASE_64_64_MAGIC_NUMBER); i++)
+        {
+            for (j = 0; j < M / (CASE_64_64_BLOCK_SIZE * CASE_64_64_MAGIC_NUMBER); j++)
+            {
                 // idk but I think it's magic somehow
                 // remove to increase miss by kinda 20
                 if (i == 7 && j == 7)
                 {
-                    for (currentGroupI = 0; currentGroupI < larger * blockSize; currentGroupI += blockSize)
+                    for (j2 = 0; j2 < CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE; j2 += CASE_64_64_BLOCK_SIZE)
                     {
-                        for (currentGroupJ = 0; currentGroupJ < larger * blockSize; currentGroupJ += blockSize)
+                        for (t4 = 0; t4 < CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE; t4 += CASE_64_64_BLOCK_SIZE)
                         {
                             // move 4x4
-                            for (i2 = 0; i2 < blockSize; i2++)
+                            for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                             {
-                                t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                                t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                                t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                                t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
+                                t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
+                                t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
+                                t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
+                                t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
 
-                                B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                                B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                                B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                                B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
+                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
+                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
+                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
                             }
                         }
                     }
@@ -130,122 +138,114 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 }
 
                 // A00 -> B00
-                currentGroupI = 0;
-                currentGroupJ = 0;
-                for (i2 = 0; i2 < blockSize; i2++)
+                j2 = 0;
+                t4 = 0;
+                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                 {
-                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                    B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                    B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                    B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                    B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
+                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
+                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
+                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
                 }
 
                 // A01 -> temp B01
-                currentGroupI = 0;
-                currentGroupJ = 4;
-                for (i2 = 0; i2 < blockSize; i2++)
+                j2 = 0;
+                t4 = 4;
+                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                 {
-                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                    B[j * larger * blockSize + currentGroupI + 0][i * larger * blockSize + currentGroupJ + i2] = t0;
-                    B[j * larger * blockSize + currentGroupI + 1][i * larger * blockSize + currentGroupJ + i2] = t1;
-                    B[j * larger * blockSize + currentGroupI + 2][i * larger * blockSize + currentGroupJ + i2] = t2;
-                    B[j * larger * blockSize + currentGroupI + 3][i * larger * blockSize + currentGroupJ + i2] = t3;
+                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
+                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
+                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
+                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t0;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t1;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t2;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t3;
                 }
 
-                // // A10 -> B01
-                // currentGroupI = 4; currentGroupJ = 0;
-                // for (i2 = 0; i2 < blockSize; i2++) {
-                //     t0 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-                //     t1 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-                //     t2 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-                //     t3 = A[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-                //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-                //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-                //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-                //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-                // }
-
-                // // temp B01 -> B10
-                // currentGroupI = 0; currentGroupJ = 4;
-                // for (i2 = 0; i2 < blockSize; i2++) {
-                //     t0 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 0];
-                //     t1 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 1];
-                //     t2 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 2];
-                //     t3 = B[i*larger*blockSize + currentGroupI + i2][j*larger*blockSize + currentGroupJ + 3];
-                //     B[j*larger*blockSize + currentGroupJ + 0][i*larger*blockSize + currentGroupI + i2] = t0;
-                //     B[j*larger*blockSize + currentGroupJ + 1][i*larger*blockSize + currentGroupI + i2] = t1;
-                //     B[j*larger*blockSize + currentGroupJ + 2][i*larger*blockSize + currentGroupI + i2] = t2;
-                //     B[j*larger*blockSize + currentGroupJ + 3][i*larger*blockSize + currentGroupI + i2] = t3;
-                // }
-
                 // B01 -> temp var, A10 -> B01, temp var -> B10
-                currentGroupI = 4, currentGroupJ = 0;
-                for (i2 = 0; i2 < blockSize; i2++)
+                j2 = 4, t4 = 0;
+                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                 {
-                    t0 = B[j * larger * blockSize + currentGroupJ + i2]
-                        [i * larger * blockSize + currentGroupI + 0];
-                    t1 = B[j * larger * blockSize + currentGroupJ + i2]
-                        [i * larger * blockSize + currentGroupI + 1];
-                    t2 = B[j * larger * blockSize + currentGroupJ + i2]
-                        [i * larger * blockSize + currentGroupI + 2];
-                    t3 = B[j * larger * blockSize + currentGroupJ + i2]
-                        [i * larger * blockSize + currentGroupI + 3];
+                    t0 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0];
+                    t1 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1];
+                    t2 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2];
+                    t3 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3];
 
-                    B[j * larger * blockSize + currentGroupJ + i2]
-                    [i * larger * blockSize + currentGroupI + 0] =
-                        A[i * larger * blockSize + currentGroupI + 0]
-                        [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0] =
+                        A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0]
+                        [j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2];
 
-                    B[j * larger * blockSize + currentGroupJ + i2]
-                    [i * larger * blockSize + currentGroupI + 1] =
-                        A[i * larger * blockSize + currentGroupI + 1]
-                        [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1] =
+                        A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1]
+                        [j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2];
 
-                    B[j * larger * blockSize + currentGroupJ + i2]
-                    [i * larger * blockSize + currentGroupI + 2] =
-                        A[i * larger * blockSize + currentGroupI + 2]
-                        [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2] =
+                        A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2]
+                        [j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2];
 
-                    B[j * larger * blockSize + currentGroupJ + i2]
-                    [i * larger * blockSize + currentGroupI + 3] =
-                        A[i * larger * blockSize + currentGroupI + 3]
-                        [j * larger * blockSize + currentGroupJ + i2];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3] =
+                        A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3]
+                        [j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2];
 
-                    B[j * larger * blockSize + currentGroupI + i2]
-                    [i * larger * blockSize + currentGroupJ + 0] = t0;
-                    B[j * larger * blockSize + currentGroupI + i2]
-                    [i * larger * blockSize + currentGroupJ + 1] = t1;
-                    B[j * larger * blockSize + currentGroupI + i2]
-                    [i * larger * blockSize + currentGroupJ + 2] = t2;
-                    B[j * larger * blockSize + currentGroupI + i2]
-                    [i * larger * blockSize + currentGroupJ + 3] = t3;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0] = t0;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1] = t1;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2] = t2;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
+                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3] = t3;
                 }
 
                 // A11 -> B11
-                currentGroupI = 4;
-                currentGroupJ = 4;
-                for (i2 = 0; i2 < blockSize; i2++)
+                j2 = 4;
+                t4 = 4;
+                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                 {
-                    t0 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 0];
-                    t1 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 1];
-                    t2 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 2];
-                    t3 = A[i * larger * blockSize + currentGroupI + i2][j * larger * blockSize + currentGroupJ + 3];
-                    B[j * larger * blockSize + currentGroupJ + 0][i * larger * blockSize + currentGroupI + i2] = t0;
-                    B[j * larger * blockSize + currentGroupJ + 1][i * larger * blockSize + currentGroupI + i2] = t1;
-                    B[j * larger * blockSize + currentGroupJ + 2][i * larger * blockSize + currentGroupI + i2] = t2;
-                    B[j * larger * blockSize + currentGroupJ + 3][i * larger * blockSize + currentGroupI + i2] = t3;
+                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
+                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
+                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
+                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
+                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
+                }
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < N; i += GENERAL_BLOCK_SIZE)
+        {
+            for (j = 0; j < M; j += GENERAL_BLOCK_SIZE)
+            {
+                for (j2 = 0; j2 < GENERAL_BLOCK_SIZE && (j+j2) < M; j2++)
+                {
+                    for (i2 = 0; i2 < GENERAL_BLOCK_SIZE && (i+i2) < N; i2++)
+                    {
+                        t0 = A[i+i2][j+j2];
+                        B[j+j2][i+i2] = t0;
+                    }
                 }
             }
         }
     }
 }
+
 
 /*
  * You can define additional transpose functions below. We've defined
