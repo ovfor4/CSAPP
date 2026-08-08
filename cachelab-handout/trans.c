@@ -20,7 +20,7 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
  *     be graded.
  */
 
-#define GENERAL_BLOCK_SIZE 8
+#define GENERAL_BLOCK_SIZE 16
 #define CASE_32_32_BLOCK_SIZE 8
 #define CASE_64_64_BLOCK_SIZE 4
 #define CASE_64_64_MAGIC_NUMBER 2
