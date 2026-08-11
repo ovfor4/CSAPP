@@ -1,0 +1,3 @@
+[submodule "shlab-handout"]
+	path = shlab-handout
+	url = https://github.com/ov-4/tiny-shell.git
