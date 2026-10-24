@@ -79,6 +79,7 @@ void logger( std::format_string<Args...> fmt, Args&&... args )
 
 void print_list()
 {
+#ifdef OV4_VERBOSE
     logger("print_list: ");
     size_t p = (size_t)mem_heap_lo();
     while (true)
@@ -90,4 +91,5 @@ void print_list()
         p += get_size(*(size_t*)p);
     }
     loggerln("");
+#endif  
 }
