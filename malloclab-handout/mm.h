@@ -1,5 +1,9 @@
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int mm_init (void);
 extern void *mm_malloc (size_t size);
 extern void mm_free (void *ptr);
@@ -20,4 +24,8 @@ typedef struct {
 } team_t;
 
 extern team_t team;
+
+#ifdef __cplusplus
+}
+#endif
 
