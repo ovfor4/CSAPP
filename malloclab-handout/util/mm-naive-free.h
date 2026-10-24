@@ -11,9 +11,6 @@ using namespace std;
 /* single word (4) or double word (8) alignment */
 #define ALIGNMENT 8
 
-
-inline constexpr bool OV4_VERBOSE = true;
-
 /* rounds up to the nearest multiple of ALIGNMENT */
 inline size_t align(size_t size)
 {
@@ -64,10 +61,20 @@ inline void next(size_t &p)
 }
 
 template< class... Args >
-void loggerln( std::format_string<Args...> fmt, Args&&... args ) { if constexpr (OV4_VERBOSE) println(fmt, forward<Args>(args)...); }
+void loggerln( std::format_string<Args...> fmt, Args&&... args ) 
+{ 
+#ifdef OV4_VERBOSE
+    println(fmt, forward<Args>(args)...); 
+#endif
+}
 
 template< class... Args >
-void logger( std::format_string<Args...> fmt, Args&&... args ) { if constexpr (OV4_VERBOSE) print(fmt, forward<Args>(args)...); }
+void logger( std::format_string<Args...> fmt, Args&&... args ) 
+{ 
+#ifdef OV4_VERBOSE
+    print(fmt, forward<Args>(args)...); 
+#endif
+}
 
 
 void print_list()
