@@ -15,11 +15,16 @@
 #include <unistd.h>
 #include <string.h>
 #include <print>
+#include <unistd.h>
+
+#include "util/mm-naive-free.h"
 
 #include "mm.h"
 #include "memlib.h"
 
 using namespace std;
+
+void print_list();
 
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
@@ -38,54 +43,6 @@ team_t team = {
     ""
 };
 
-/* single word (4) or double word (8) alignment */
-#define ALIGNMENT 8
-
-constexpr bool OV4_VERBOSE = false;
-
-/* rounds up to the nearest multiple of ALIGNMENT */
-inline size_t align(size_t size)
-{
-    return (((size) + (ALIGNMENT-1)) & ~0x7);
-}
-
-constexpr size_t SIZE_T_SIZE = 8;
-
-inline bool is_alloc(size_t status)
-{
-    return (status&0x1);
-}
-inline bool is_prev_alloc(size_t status)
-{
-    return (status&0x2) >> 1;
-}
-inline void set_status(size_t &status, bool is_alloc)
-{
-    if (is_alloc)
-        status |= 0x1;
-    else
-        status &= 0xfffffffe;
-}
-inline void set_prev_status(size_t &status, bool is_prev_alloc)
-{
-    if (is_prev_alloc)
-        status |= 0x2;
-    else
-        status &= 0xfffffffd;
-}
-inline size_t get_size(size_t status)
-{
-    // ignore lowest 2 bits
-    return status&0xfffffffc;
-}
-inline void set_size(size_t &status, size_t size)
-{
-    status &= 0x3;
-    status |= (size & 0xfffffffc);
-}
-
-template< class... Args >
-void loggerln( std::format_string<Args...> fmt, Args&&... args ) { if constexpr (OV4_VERBOSE) println(fmt, args...); }
 
 /* 
  * mm_init - initialize the malloc package.
@@ -107,45 +64,69 @@ void mm_quit(int code, int line)
  */
 void *mm_malloc(size_t size)
 {
-    loggerln("----------");
+    loggerln("---------- malloc ----------");
+    print_list();
     size_t newsize = align(size + SIZE_T_SIZE);
     loggerln("newsize: {}", newsize);
-    //void *p = mem_sbrk(newsize);
-    char *p = (char*)mem_heap_lo();
+    size_t p = (size_t)mem_heap_lo();
+    bool prev_alloc = true;
+
     while (true)
     {
+        //if (newsize == 4080) sleep(1);
         size_t status = 0;
-        loggerln("offset: 0x{:x}", (size_t)p-(size_t)mem_heap_lo());
+        loggerln("offset: {}", (size_t)p-(size_t)mem_heap_lo());
 
         // out of heap
-        if (p >= mem_heap_hi())
+        if (p >= (size_t)mem_heap_hi())
         {
+            // then increase heap
+            // and set current pos to be free
+            // so it can be alloc'd soon
             loggerln("sbrk");
             mem_sbrk(newsize);
             set_size(status, newsize);
-            set_status(status, true);
+            set_alloc(status, false);
             *(size_t*)p = status;
-            void *ret = (void*)((char*)p + SIZE_T_SIZE);
-            loggerln("return: 0x{:x}" , (size_t)ret-(size_t)mem_heap_lo());
-            return ret;
         }
         status = *(size_t*)p;
         if (is_alloc(status))
         {
             p += get_size(status);
+            prev_alloc = true;
+            continue;
+        }
+        prev_alloc = false;
+
+        if (get_size(status) < newsize)
+        {
+            next(p);
             continue;
         }
 
-        mm_quit(-1, __LINE__);
+        size_t oldsize = get_size(status);
+
+        set_size(status, newsize);
+        set_alloc(status, true);
+        set_prev_alloc(status, prev_alloc);
+        *(size_t*)p = status;
+        void *ret = (void*)((char*)p + SIZE_T_SIZE);
+
+        if (oldsize > newsize)
+        {
+            size_t free_status = 0;
+            set_size(free_status, oldsize-newsize);
+            set_alloc(free_status, false);
+            set_prev_alloc(free_status, false);
+            *(size_t*)(p+newsize) = free_status;
+            loggerln("split free: free begins {}", offset(p+newsize));
+        }
+
+        loggerln("return: {}" , (size_t)ret-(size_t)mem_heap_lo());
+        return ret;
         
     }
 
-
-    if (p == (void *)-1)
-	    return NULL;
-    else {
-        
-    }
 }
 
 /*
@@ -153,6 +134,32 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+    if (ptr == nullptr) return;
+
+    loggerln("---------- free ----------");
+
+    loggerln("argument: {}", (size_t)ptr-(size_t)mem_heap_lo());
+
+    print_list();
+
+    size_t header = (size_t)ptr-SIZE_T_SIZE;
+    size_t next = header + get_size(*(size_t*)header);
+
+    if (next > (size_t)mem_heap_hi()) next = 0;
+
+    loggerln("header: {}", offset(header));
+    loggerln("header size: {}", get_size(*(size_t*)header));
+    loggerln("next: {}", next != 0 ? offset(next) : 0);
+
+    set_alloc(*(size_t*)header, false);
+
+    // if next is free
+    if ((next != 0) 
+        && (!is_alloc(*(size_t*)next)))
+    {
+        size_t newsize = get_size(*(size_t*)header) + get_size(*(size_t*)next);
+        set_size(*(size_t*)header, newsize);
+    }
 }
 
 /*
@@ -174,8 +181,6 @@ void *mm_realloc(void *ptr, size_t size)
     mm_free(oldptr);
     return newptr;
 }
-
-
 
 
 
