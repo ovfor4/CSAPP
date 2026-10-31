@@ -87,9 +87,15 @@ void print_list()
         if (p >= (size_t)mem_heap_hi())
             break;
         
-        logger("{} ", offset(p));
+        logger("{}({},{}) ", offset(p), is_alloc(*(size_t*)p) ? "alloc" : "free", get_size(*(size_t*)p));
         p += get_size(*(size_t*)p);
     }
     loggerln("");
 #endif  
+}
+
+void sync_footer(size_t header)
+{
+    size_t footer = header + get_size(*(size_t*)header) - SIZE_T_SIZE;
+    *(size_t*)footer = *(size_t*)header;
 }

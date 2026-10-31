@@ -17,7 +17,7 @@
 #include <print>
 #include <unistd.h>
 
-#include "util/mm-naive-free.h"
+#include "util/mm-implicit.h"
 
 #include "mm.h"
 #include "memlib.h"
@@ -65,6 +65,7 @@ void mm_quit(int code, int line)
 void *mm_malloc(size_t size)
 {
     loggerln("---------- malloc ----------");
+    loggerln("argument: {}", size);
     print_list();
     size_t newsize = align(size + SIZE_T_SIZE);
     loggerln("newsize: {}", newsize);
@@ -83,10 +84,14 @@ void *mm_malloc(size_t size)
             // then increase heap
             // and set current pos to be free
             // so it can be alloc'd soon
-            loggerln("sbrk");
+            loggerln("before: max addr {}", offset((size_t)mem_heap_hi()));
             mem_sbrk(newsize);
+            loggerln("sbrk {}", newsize);
+            loggerln("max addr {}", offset((size_t)mem_heap_hi()));
+
             set_size(status, newsize);
             set_alloc(status, false);
+            set_prev_alloc(status, true); // TODO
             *(size_t*)p = status;
         }
         status = *(size_t*)p;
@@ -108,18 +113,23 @@ void *mm_malloc(size_t size)
 
         set_size(status, newsize);
         set_alloc(status, true);
-        set_prev_alloc(status, prev_alloc);
+        set_prev_alloc(status, true); // TODO
         *(size_t*)p = status;
         void *ret = (void*)((char*)p + SIZE_T_SIZE);
 
+
+        // if we don't use all of free space
+        // split free block into 2 parts
         if (oldsize > newsize)
         {
             size_t free_status = 0;
-            set_size(free_status, oldsize-newsize);
+            set_size(free_status, oldsize - newsize);
             set_alloc(free_status, false);
-            set_prev_alloc(free_status, false);
-            *(size_t*)(p+newsize) = free_status;
-            loggerln("split free: free begins {}", offset(p+newsize));
+            set_prev_alloc(free_status, true);
+            size_t free_header_p = p+newsize;
+            *(size_t*)(free_header_p) = free_status;
+            sync_footer(free_header_p);
+            loggerln("split free: free begins {}", offset(free_header_p));
         }
 
         loggerln("return: {}" , (size_t)ret-(size_t)mem_heap_lo());
@@ -143,22 +153,48 @@ void mm_free(void *ptr)
     print_list();
 
     size_t header = (size_t)ptr-SIZE_T_SIZE;
-    size_t next = header + get_size(*(size_t*)header);
+    size_t next_header = header + get_size(*(size_t*)header);
 
-    if (next > (size_t)mem_heap_hi()) next = 0;
+    if (next_header > (size_t)mem_heap_hi()) next_header = 0;
 
     loggerln("header: {}", offset(header));
     loggerln("header size: {}", get_size(*(size_t*)header));
-    loggerln("next: {}", next != 0 ? offset(next) : 0);
+    loggerln("next: {}", next_header != 0 ? offset(next_header) : 0);
 
+    // free current block
     set_alloc(*(size_t*)header, false);
+    sync_footer(header);
 
-    // if next is free
-    if ((next != 0) 
-        && (!is_alloc(*(size_t*)next)))
+    // if next_header is free
+    if ((next_header != 0) 
+        && (!is_alloc(*(size_t*)next_header)))
     {
-        size_t newsize = get_size(*(size_t*)header) + get_size(*(size_t*)next);
+        size_t newsize = get_size(*(size_t*)header) + get_size(*(size_t*)next_header);
+        loggerln("next free: newsize {}", newsize);
         set_size(*(size_t*)header, newsize);
+        sync_footer(header);
+    }
+
+    // if prev exists
+    // and is free
+    if (!is_prev_alloc(*(size_t*)header)
+        && header != (size_t)mem_heap_lo())
+    {
+
+        loggerln("handling prev free");
+
+        size_t prev_footer = header - SIZE_T_SIZE;
+        size_t prev_header = header - get_size(*(size_t*)prev_footer);
+
+        loggerln("prev_footer: {}", offset(prev_footer));
+        loggerln("prev footer size: {}", get_size(*(size_t*)prev_footer));
+
+        loggerln("ok 0");
+        size_t newsize = get_size(*(size_t*)prev_header) + get_size(*(size_t*)header);
+        loggerln("ok1");
+        set_size(*(size_t*)prev_header, newsize);
+        loggerln("ok2");
+        sync_footer(prev_header);
     }
 }
 
