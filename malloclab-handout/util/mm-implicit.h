@@ -69,7 +69,7 @@ void loggerln( std::format_string<Args...> fmt, Args&&... args )
 }
 
 template< class... Args >
-void logger( std::format_string<Args...> fmt, Args&&... args ) 
+inline void logger( std::format_string<Args...> fmt, Args&&... args ) 
 { 
 #ifdef OV4_VERBOSE
     print(fmt, forward<Args>(args)...); 
@@ -78,7 +78,7 @@ void logger( std::format_string<Args...> fmt, Args&&... args )
 }
 
 
-void print_list()
+inline void print_list()
 {
 #ifdef OV4_VERBOSE
     logger("print_list: ");
@@ -95,8 +95,17 @@ void print_list()
 #endif  
 }
 
-void sync_footer(size_t header)
+inline void sync_footer(size_t header)
 {
     size_t footer = header + get_size(*(size_t*)header) - SIZE_T_SIZE;
     *(size_t*)footer = *(size_t*)header;
+}
+
+inline size_t stat_pack(size_t size, bool alloc, bool prev_alloc)
+{
+    size_t status = 0;
+    set_size(status, size);
+    set_alloc(status, alloc);
+    set_prev_alloc(status, prev_alloc);
+    return status;
 }

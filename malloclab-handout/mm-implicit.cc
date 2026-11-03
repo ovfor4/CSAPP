@@ -24,8 +24,6 @@
 
 using namespace std;
 
-void print_list();
-
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -89,9 +87,7 @@ void *mm_malloc(size_t size)
             loggerln("sbrk {}", newsize);
             loggerln("max addr {}", offset((size_t)mem_heap_hi()));
 
-            set_size(status, newsize);
-            set_alloc(status, false);
-            set_prev_alloc(status, prev_alloc); // TODO
+            status = stat_pack(newsize, false, prev_alloc);
             *(size_t*)p = status;
         }
         
@@ -118,9 +114,7 @@ void *mm_malloc(size_t size)
 
         size_t oldsize = get_size(status);
 
-        set_size(status, newsize);
-        set_alloc(status, true);
-        set_prev_alloc(status, prev_alloc); // TODO
+        status = stat_pack(newsize, true, prev_alloc);
         *(size_t*)p = status;
         void *ret = (void*)((char*)p + SIZE_T_SIZE);
 
@@ -130,10 +124,11 @@ void *mm_malloc(size_t size)
         if (oldsize > newsize)
         {
             size_t free_status = 0;
-            set_size(free_status, oldsize - newsize);
-            set_alloc(free_status, false);
-            set_prev_alloc(free_status, true);  // becomes: ALLOC FREE
-                                                // so definitely prev_alloc=true for FREE part
+            
+            // becomes: ALLOC FREE
+            // so definitely prev_alloc=true for FREE part
+            free_status = stat_pack(oldsize - newsize, false, true);
+
             size_t free_header_p = p+newsize;
             *(size_t*)(free_header_p) = free_status;
             sync_footer(free_header_p);
