@@ -113,6 +113,9 @@ void *mm_malloc(size_t size)
             continue;
         }
 
+        // really alloc
+        // never gonna iterate again
+
         size_t oldsize = get_size(status);
 
         set_size(status, newsize);
@@ -129,7 +132,8 @@ void *mm_malloc(size_t size)
             size_t free_status = 0;
             set_size(free_status, oldsize - newsize);
             set_alloc(free_status, false);
-            set_prev_alloc(free_status, true);
+            set_prev_alloc(free_status, true);  // becomes: ALLOC FREE
+                                                // so definitely prev_alloc=true for FREE part
             size_t free_header_p = p+newsize;
             *(size_t*)(free_header_p) = free_status;
             sync_footer(free_header_p);
@@ -139,9 +143,9 @@ void *mm_malloc(size_t size)
         // so need to update next prev_alloc
         else
         {
-            size_t p_next = get_size(*(size_t*)p);
+            size_t p_next = p + get_size(*(size_t*)p);
             if (p_next <= (size_t)mem_heap_hi())
-                set_prev_alloc(*(size_t*)p, true);
+                set_prev_alloc(*(size_t*)p_next, true);
         }
 
         loggerln("return: {}" , (size_t)ret-(size_t)mem_heap_lo());

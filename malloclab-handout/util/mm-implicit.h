@@ -73,6 +73,7 @@ void logger( std::format_string<Args...> fmt, Args&&... args )
 { 
 #ifdef OV4_VERBOSE
     print(fmt, forward<Args>(args)...); 
+    fflush(stdout);
 #endif
 }
 
