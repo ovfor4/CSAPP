@@ -67,6 +67,7 @@ void *mm_malloc(size_t size)
     loggerln("---------- malloc ----------");
     loggerln("argument: {}", size);
     print_list();
+
     size_t newsize = align(size + SIZE_T_SIZE);
     loggerln("newsize: {}", newsize);
     size_t p = (size_t)mem_heap_lo();
@@ -74,7 +75,6 @@ void *mm_malloc(size_t size)
 
     while (true)
     {
-        //if (newsize == 4080) sleep(1);
         size_t status = 0;
         loggerln("offset: {}", (size_t)p-(size_t)mem_heap_lo());
 
@@ -91,9 +91,10 @@ void *mm_malloc(size_t size)
 
             set_size(status, newsize);
             set_alloc(status, false);
-            set_prev_alloc(status, true); // TODO
+            set_prev_alloc(status, prev_alloc); // TODO
             *(size_t*)p = status;
         }
+        
         status = *(size_t*)p;
         if (is_alloc(status))
         {
@@ -101,11 +102,14 @@ void *mm_malloc(size_t size)
             prev_alloc = true;
             continue;
         }
-        prev_alloc = false;
+        
 
+        // is free
+        // but too small
         if (get_size(status) < newsize)
         {
             next(p);
+            prev_alloc = false;
             continue;
         }
 
@@ -113,7 +117,7 @@ void *mm_malloc(size_t size)
 
         set_size(status, newsize);
         set_alloc(status, true);
-        set_prev_alloc(status, true); // TODO
+        set_prev_alloc(status, prev_alloc); // TODO
         *(size_t*)p = status;
         void *ret = (void*)((char*)p + SIZE_T_SIZE);
 
@@ -130,6 +134,14 @@ void *mm_malloc(size_t size)
             *(size_t*)(free_header_p) = free_status;
             sync_footer(free_header_p);
             loggerln("split free: free begins {}", offset(free_header_p));
+        }
+        // use all of free space
+        // so need to update next prev_alloc
+        else
+        {
+            size_t p_next = get_size(*(size_t*)p);
+            if (p_next <= (size_t)mem_heap_hi())
+                set_prev_alloc(*(size_t*)p, true);
         }
 
         loggerln("return: {}" , (size_t)ret-(size_t)mem_heap_lo());
