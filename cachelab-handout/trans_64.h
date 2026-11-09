@@ -1,5 +1,21 @@
 #pragma once
 
+#define TRANSPOSE_4_BY_4(base_i_A, base_j_A, base_i_B, base_j_B, tmp) \
+do \
+{ \
+for (tmp = 0; tmp < 4; tmp++) \
+{ \
+    t0 = A[base_i_A + tmp][base_j_A + 0]; \
+    t1 = A[base_i_A + tmp][base_j_A + 1]; \
+    t2 = A[base_i_A + tmp][base_j_A + 2]; \
+    t3 = A[base_i_A + tmp][base_j_A + 3]; \
+    B[base_i_B + 0][base_j_B + tmp] = t0; \
+    B[base_i_B + 1][base_j_B + tmp] = t1; \
+    B[base_i_B + 2][base_j_B + tmp] = t2; \
+    B[base_i_B + 3][base_j_B + tmp] = t3; \
+} \
+} while (0)
+
 #define CP_4_BY_8(base_i, base_j, tmp) \
 do \
 { \

@@ -120,34 +120,14 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 }
 
                 // A00 -> B00
-                j2 = 0;
-                t4 = 0;
-                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
-                {
-                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
-                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
-                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
-                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
-                }
+                TRANSPOSE_4_BY_4(i*8 + 0*4, j*8 + 0*4, 
+                    j*8 + 0*4, i*8 + 0*4, i2);
+
 
                 // A01 -> temp B01
-                j2 = 0;
-                t4 = 4;
-                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
-                {
-                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
-                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
-                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
-                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t0;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t1;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t2;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2] = t3;
-                }
+                TRANSPOSE_4_BY_4(i*8 + 0*4, j*8 + 1*4, 
+                    j*8 + 0*4, i*8 + 1*4, i2);
+
 
                 // B01 -> temp var, A10 -> B01, temp var -> B10
                 j2 = 4, t4 = 0;
@@ -193,19 +173,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 }
 
                 // A11 -> B11
-                j2 = 4;
-                t4 = 4;
-                for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
-                {
-                    t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
-                    t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
-                    t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
-                    t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
-                }
+                TRANSPOSE_4_BY_4(i*8 + 1*4, j*8 + 1*4, 
+                    j*8 + 1*4, i*8 + 1*4, i2);
             }
         }
     }
