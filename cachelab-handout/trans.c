@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include "cachelab.h"
 
-#include "trans.h"
-
 int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 
 /*
@@ -26,6 +24,9 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 #define CASE_32_32_BLOCK_SIZE 8
 #define CASE_64_64_BLOCK_SIZE 4
 #define CASE_64_64_MAGIC_NUMBER 2
+
+#include "trans_64.h"
+#include "trans_32.h"
 
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
@@ -64,6 +65,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             for (j = 0; j < M; j+=CASE_32_32_BLOCK_SIZE)
             {
                 // wtf magic?
+                // diagonal
                 if (i == j && i != 24)
                 {
                     for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
@@ -85,26 +87,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                     continue;
                 }
 
-
-                for (i2 = 0; i2 < CASE_32_32_BLOCK_SIZE; i2++)
-                {
-                    t0 = A[i+i2][j+0];
-                    t1 = A[i+i2][j+1];
-                    t2 = A[i+i2][j+2];
-                    t3 = A[i+i2][j+3];
-                    t4 = A[i+i2][j+4];
-                    t5 = A[i+i2][j+5];
-                    t6 = A[i+i2][j+6];
-                    t7 = A[i+i2][j+7];
-                    B[j+0][i+i2] = t0;
-                    B[j+1][i+i2] = t1;
-                    B[j+2][i+i2] = t2;
-                    B[j+3][i+i2] = t3;
-                    B[j+4][i+i2] = t4;
-                    B[j+5][i+i2] = t5;
-                    B[j+6][i+i2] = t6;
-                    B[j+7][i+i2] = t7;
-                }
+                B_32_8_BY_8_TRANSPOSE(i, j, i2);
             }
         }
     }

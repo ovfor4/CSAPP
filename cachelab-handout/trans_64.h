@@ -1,3 +1,5 @@
+#pragma once
+
 #define CP_4_BY_8(base_i, base_j, tmp) \
 do \
 { \
