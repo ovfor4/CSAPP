@@ -25,6 +25,7 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 #define CASE_64_64_BLOCK_SIZE 4
 #define CASE_64_64_MAGIC_NUMBER 2
 
+#include "trans.h"
 #include "trans_64.h"
 #include "trans_32.h"
 
@@ -133,15 +134,9 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 j2 = 4, t4 = 0;
                 for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
                 {
-                    t0 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
-                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0];
-                    t1 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
-                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 1];
-                    t2 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
-                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 2];
-                    t3 = B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
-                        [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3];
+                    LOAD_ROW_4(B, j*8 + 0*4 + i2, i*8 + 1*4);
 
+                    
                     B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2]
                     [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0] =
                         A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 0]
@@ -162,14 +157,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                         A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + 3]
                         [j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + i2];
 
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
-                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0] = t0;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
-                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1] = t1;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
-                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2] = t2;
-                    B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2]
-                    [i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3] = t3;
+
+                    STORE_ROW_4(B, j*8 + 1*4 + i2, i*8 + 0*4);
                 }
 
                 // A11 -> B11
