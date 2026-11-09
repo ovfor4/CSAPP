@@ -113,8 +113,8 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             for (j = 0; j < M / (CASE_64_64_BLOCK_SIZE * CASE_64_64_MAGIC_NUMBER); j++)
             {
                 // idk but I think it's magic somehow
-                // remove to increase miss by kinda 20
-                if (i == 7 && j == 7)
+                // solve diagonal issue
+                if (i == j)
                 {
                     for (j2 = 0; j2 < CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE; j2 += CASE_64_64_BLOCK_SIZE)
                     {
