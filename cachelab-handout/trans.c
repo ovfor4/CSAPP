@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include "cachelab.h"
 
+#include "trans.h"
+
 int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 
 /*
@@ -116,25 +118,21 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
                 // solve diagonal issue
                 if (i == j)
                 {
-                    for (j2 = 0; j2 < CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE; j2 += CASE_64_64_BLOCK_SIZE)
-                    {
-                        for (t4 = 0; t4 < CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE; t4 += CASE_64_64_BLOCK_SIZE)
-                        {
-                            // move 4x4
-                            for (i2 = 0; i2 < CASE_64_64_BLOCK_SIZE; i2++)
-                            {
-                                t0 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0];
-                                t1 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1];
-                                t2 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2];
-                                t3 = A[i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2][j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3];
+                    // A00,01 -> B00,01
+                    CP_4_BY_8(i*8 + 0*4, j*8 + 0*4, i2);
+                    B_SMALL_TRANSPOSE(i*8 + 0*4, j*8 + 0*4, i2);
+                    B_SMALL_TRANSPOSE(i*8 + 0*4, j*8 + 1*4, i2);
 
-                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 0][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t0;
-                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 1][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t1;
-                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 2][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t2;
-                                B[j * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + t4 + 3][i * CASE_64_64_MAGIC_NUMBER * CASE_64_64_BLOCK_SIZE + j2 + i2] = t3;
-                            }
-                        }
-                    }
+                    // A10,11 -> B10,11
+                    CP_4_BY_8(i*8 + 1*4, j*8 + 0*4, i2);
+                    B_SMALL_TRANSPOSE(i*8 + 1*4, j*8 + 0*4, i2);
+                    B_SMALL_TRANSPOSE(i*8 + 1*4, j*8 + 1*4, i2);
+
+                    // swap B01, B10
+                    // B10 is cached
+                    B_SWAP_4_BY_4(i*8 + 1*4, j*8 + 0*4, 
+                        i*8 + 0*4, j*8 + 1*4, i2);
+
                     continue;
                 }
 
